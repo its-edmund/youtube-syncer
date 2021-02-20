@@ -1,4 +1,6 @@
 import express from 'express';
+import io from 'socket.io';
+
 const PORT = process.env.PORT || 5000;
 
 const app = express();
