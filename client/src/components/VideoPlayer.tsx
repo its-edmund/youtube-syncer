@@ -1,17 +1,47 @@
+import { string } from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import Youtube from 'react-youtube';
-import { Button, Form, FormGroup, Input, InputGroup, InputGroupAddon } from 'reactstrap';
+import { Button, Form, FormGroup, Input } from 'reactstrap';
+import io from 'socket.io-client';
 
 import styles from './VideoPlayer.module.css';
+
+const socket = io('http://localhost:5000');
 
 const VideoPlayer = (): JSX.Element => {
   const [searchVideoId, setSearchVideoId] = useState('');
   const [videoId, setVideoId] = useState('dyRsYk0LyA8');
-  const [currentTime, setCurrentTime] = useState();
+  const [videoPlayer, setVideoPlayer] = useState<any>(null);
+  const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
-    console.log(currentTime);
-  }, [currentTime]);
+    // socket.on('all-time-change', (time: string) => {
+    //   videoPlayer?.seekTo(Number(time));
+    // });
+
+
+    socket.on('all-play', (time: string) => {
+      console.log('I don\'t know why, I don\'t want to know why, but it only works with console.log');
+      if (videoPlayer !== null) {
+        videoPlayer.playVideo();
+        videoPlayer.seekTo(Number(time));
+      }
+    });
+
+    socket.on('all-pause', (time: string) => {
+      console.log('I don\'t know why, I don\'t want to know why, but it only works with console.log');
+      if(videoPlayer !== null) {
+        videoPlayer.pauseVideo();
+        videoPlayer.seekTo(Number(time));
+      }
+    });
+  }, []);
+
+  // useEffect(() => {
+  //   socket.on('new-operations', ({editorId, ops}: {editorId: string, ops: string}) => {
+
+  //   })
+  // })
 
   const opts = {
     height: '390',
@@ -25,8 +55,23 @@ const VideoPlayer = (): JSX.Element => {
     }
   };
 
-  const _onReady = (e: any): void => {
+  const sleep = (ms: number) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  };
+
+  const onReady = (e: any): void => {
+    setVideoPlayer(e.target);
     e.target.playVideo();
+  };
+
+  const onPause = (e: any) => {
+    videoPlayer.pauseVideo();
+    socket.emit('pause', videoPlayer.getCurrentTime());
+  };
+
+  const onPlay = (e: any) => {
+    videoPlayer.playVideo();
+    socket.emit('play', videoPlayer.getCurrentTime());
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
@@ -35,7 +80,12 @@ const VideoPlayer = (): JSX.Element => {
   };
 
   const handleChange = (event: any) => {
-    setCurrentTime(event.target.getCurrentTime());
+    setVideoPlayer(event.target);
+    socket.emit('time-change', event.target.getCurrentTime());
+  };
+
+  const handleSlideStop = (event: any) => {
+    console.log(event);
   };
 
   return (
@@ -52,10 +102,13 @@ const VideoPlayer = (): JSX.Element => {
       <Youtube 
         className={styles.video}
         videoId={videoId}
-        onReady={_onReady}
+        // onPlay={onPlay}
+        // onPause={onPause}
+        onReady={onReady}
         opts={opts}
-        onStateChange={handleChange}
       />
+      <Button onClick={onPlay}>Play</Button>
+      <Button onClick={onPause}>Pause</Button>
     </div>
   );
 };

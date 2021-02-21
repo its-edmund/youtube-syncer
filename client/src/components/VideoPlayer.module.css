@@ -1,5 +1,6 @@
 .video {
     margin-top: 50px;
+    /* pointer-events: none; */
 }
 
 .input {
